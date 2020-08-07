@@ -1,15 +1,18 @@
-import React, { Suspense, useRef } from "react";
-import { Canvas, useLoader, useFrame } from "react-three-fiber";
-import { RecoilRoot, useRecoilState, useRecoilValue } from "recoil";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import { TextureLoader } from "three";
+import React, { Suspense, useRef } from 'react';
+import { Canvas, useLoader, useFrame } from 'react-three-fiber';
+import { RecoilRoot, useRecoilState, useRecoilValue } from 'recoil';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { TextureLoader } from 'three';
 import {
   shipPositionState,
   enemyPositionState,
   laserPositionState,
-  scoreState
-} from "./gameState";
-import "./styles.css";
+  scoreState,
+} from './gameState';
+import * as nodes from './gameState';
+import './styles.css';
+import RecoilizeDebugger from 'recoilize';
+const root = document.getElementById('root');
 
 // Game settings.
 const LASER_RANGE = 100;
@@ -73,7 +76,7 @@ function ArWing() {
   useFrame(({ mouse }) => {
     setShipPosition({
       position: { x: mouse.x * 6, y: mouse.y * 2 },
-      rotation: { z: -mouse.x * 0.5, x: -mouse.x * 0.5, y: -mouse.y * 0.2 }
+      rotation: { z: -mouse.x * 0.5, x: -mouse.x * 0.5, y: -mouse.y * 0.2 },
     });
   });
   // Update the ships position from the updated state.
@@ -85,7 +88,7 @@ function ArWing() {
     ship.current.position.x = shipPosition.position.x;
   });
 
-  const { nodes } = useLoader(GLTFLoader, "models/arwing.glb");
+  const { nodes } = useLoader(GLTFLoader, 'models/arwing.glb');
 
   return (
     <group ref={ship}>
@@ -109,7 +112,7 @@ function Target() {
 
   const loader = new TextureLoader();
   // A png with transparency to use as the target sprite.
-  const texture = loader.load("target.png");
+  const texture = loader.load('target.png');
 
   // Update the position of the reticle based on the ships current position.
   useFrame(({ mouse }) => {
@@ -137,7 +140,7 @@ function Enemies() {
   const enemies = useRecoilValue(enemyPositionState);
   return (
     <group>
-      {enemies.map(enemy => (
+      {enemies.map((enemy) => (
         <mesh position={[enemy.x, enemy.y, enemy.z]} key={`${enemy.x}`}>
           <sphereBufferGeometry attach="geometry" args={[2, 8, 8]} />
           <meshStandardMaterial attach="material" color="white" wireframe />
@@ -163,8 +166,11 @@ function LaserController() {
             x: 0,
             y: 0,
             z: 0,
-            velocity: [shipPosition.rotation.x * 6, shipPosition.rotation.y * 5]
-          }
+            velocity: [
+              shipPosition.rotation.x * 6,
+              shipPosition.rotation.y * 5,
+            ],
+          },
         ])
       }
     >
@@ -184,7 +190,7 @@ function Lasers() {
   const lasers = useRecoilValue(laserPositionState);
   return (
     <group>
-      {lasers.map(laser => (
+      {lasers.map((laser) => (
         <mesh position={[laser.x, laser.y, laser.z]} key={`${laser.id}`}>
           <boxBufferGeometry attach="geometry" args={[1, 1, 1]} />
           <meshStandardMaterial attach="material" emissive="white" wireframe />
@@ -205,9 +211,9 @@ function GameTimer() {
 
     const hitEnemies = enemies
       ? enemies.map(
-          enemy =>
+          (enemy) =>
             lasers.filter(
-              laser =>
+              (laser) =>
                 laser.z - enemy.z < 1 &&
                 laser.x - enemy.x < 1 &&
                 laser.y - enemy.y < 1
@@ -217,26 +223,26 @@ function GameTimer() {
 
     if (hitEnemies.includes(true) && enemies.length > 0) {
       setScore(score + 1);
-      console.log("hit detected");
+      console.log('hit detected');
     }
 
     // Move all of the enemies. Remove enemies that have been destroyed, or passed the player.
     setEnemies(
       enemies
-        .map(enemy => ({ x: enemy.x, y: enemy.y, z: enemy.z + ENEMY_SPEED }))
+        .map((enemy) => ({ x: enemy.x, y: enemy.y, z: enemy.z + ENEMY_SPEED }))
         .filter((enemy, idx) => !hitEnemies[idx] && enemy.z < 0)
     );
     // Move the Lasers and remove lasers at end of range or that have hit the ground.
     setLaserPositions(
       lasers
-        .map(laser => ({
+        .map((laser) => ({
           id: laser.id,
           x: laser.x + laser.velocity[0],
           y: laser.y + laser.velocity[1],
           z: laser.z - LASER_Z_VELOCITY,
-          velocity: laser.velocity
+          velocity: laser.velocity,
         }))
-        .filter(laser => laser.z > -LASER_RANGE && laser.y > GROUND_HEIGHT)
+        .filter((laser) => laser.z > -LASER_RANGE && laser.y > GROUND_HEIGHT)
     );
   });
   return null;
@@ -245,8 +251,9 @@ function GameTimer() {
 export default function App() {
   return (
     <>
-      <Canvas style={{ background: "black" }}>
+      <Canvas style={{ background: 'black' }}>
         <RecoilRoot>
+          <RecoilizeDebugger nodes={nodes} root={root} />
           <directionalLight intensity={1} />
           <ambientLight intensity={0.1} />
           <Suspense fallback={<Loading />}>
