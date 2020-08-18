@@ -1,4 +1,4 @@
-import React, { Suspense, useRef } from 'react';
+import React, { Suspense, useRef, useEffect } from 'react';
 import { Canvas, useLoader, useFrame } from 'react-three-fiber';
 import { RecoilRoot, useRecoilState, useRecoilValue } from 'recoil';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
@@ -8,6 +8,7 @@ import {
   enemyPositionState,
   laserPositionState,
   scoreState,
+  pauseState,
 } from './gameState';
 import * as nodes from './gameState';
 import './styles.css';
@@ -39,10 +40,11 @@ function Loading() {
 
 // A Ground plane that moves relative to the player. The player stays at 0,0
 function Terrain() {
+  const paused = useRecoilValue(pauseState);
   const terrain = useRef();
 
   useFrame(() => {
-    terrain.current.position.z += 0.4;
+    if (paused === false) terrain.current.position.z += 0.4;
   });
   // Returns a mesh at GROUND_HEIGHT below the player. Scaled to 5000, 5000 with 128 segments.
   // X Rotation is -Math.PI / 2 which is 90 degrees in radians.
@@ -71,21 +73,26 @@ function Terrain() {
 
 function ArWing() {
   const [shipPosition, setShipPosition] = useRecoilState(shipPositionState);
+  const paused = useRecoilValue(pauseState);
 
   const ship = useRef();
   useFrame(({ mouse }) => {
-    setShipPosition({
-      position: { x: mouse.x * 6, y: mouse.y * 2 },
-      rotation: { z: -mouse.x * 0.5, x: -mouse.x * 0.5, y: -mouse.y * 0.2 },
-    });
+    if (paused === false) {
+      setShipPosition({
+        position: { x: mouse.x * 6, y: mouse.y * 2 },
+        rotation: { z: -mouse.x * 0.5, x: -mouse.x * 0.5, y: -mouse.y * 0.2 },
+      });
+    }
   });
   // Update the ships position from the updated state.
   useFrame(() => {
-    ship.current.rotation.z = shipPosition.rotation.z;
-    ship.current.rotation.y = shipPosition.rotation.x;
-    ship.current.rotation.x = shipPosition.rotation.y;
-    ship.current.position.y = shipPosition.position.y;
-    ship.current.position.x = shipPosition.position.x;
+    if (paused === false) {
+      ship.current.rotation.z = shipPosition.rotation.z;
+      ship.current.rotation.y = shipPosition.rotation.x;
+      ship.current.rotation.x = shipPosition.rotation.y;
+      ship.current.position.y = shipPosition.position.y;
+      ship.current.position.x = shipPosition.position.x;
+    }
   });
 
   const { nodes } = useLoader(GLTFLoader, 'models/arwing.glb');
@@ -107,6 +114,7 @@ function ArWing() {
 // Draws two sprites in front of the ship indicating the direction of fire.
 // Uses a TextureLoader to load transparent PNG, and sprite to render on a 2d plane facing the camera.
 function Target() {
+  const paused = useRecoilValue(pauseState);
   const rearTarget = useRef();
   const frontTarget = useRef();
 
@@ -116,11 +124,13 @@ function Target() {
 
   // Update the position of the reticle based on the ships current position.
   useFrame(({ mouse }) => {
-    rearTarget.current.position.y = -mouse.y * 10;
-    rearTarget.current.position.x = -mouse.x * 30;
+    if (paused === false) {
+      rearTarget.current.position.y = -mouse.y * 10;
+      rearTarget.current.position.x = -mouse.x * 30;
 
-    frontTarget.current.position.y = -mouse.y * 20;
-    frontTarget.current.position.x = -mouse.x * 60;
+      frontTarget.current.position.y = -mouse.y * 20;
+      frontTarget.current.position.x = -mouse.x * 60;
+    }
   });
   // Sprite material has a prop called map to set the texture on.
   return (
@@ -155,23 +165,27 @@ function Enemies() {
 function LaserController() {
   const shipPosition = useRecoilValue(shipPositionState);
   const [lasers, setLasers] = useRecoilState(laserPositionState);
+  const paused = useRecoilValue(pauseState);
   return (
     <mesh
       position={[0, 0, -8]}
-      onClick={() =>
-        setLasers([
-          ...lasers,
-          {
-            id: Math.random(), // This needs to be unique.. Random isn't perfect but it works. Could use a uuid here.
-            x: 0,
-            y: 0,
-            z: 0,
-            velocity: [
-              shipPosition.rotation.x * 6,
-              shipPosition.rotation.y * 5,
-            ],
-          },
-        ])
+      onClick={
+        paused === false
+          ? () =>
+              setLasers([
+                ...lasers,
+                {
+                  id: Math.random(), // This needs to be unique.. Random isn't perfect but it works. Could use a uuid here.
+                  x: 0,
+                  y: 0,
+                  z: 0,
+                  velocity: [
+                    shipPosition.rotation.x * 6,
+                    shipPosition.rotation.y * 5,
+                  ],
+                },
+              ])
+          : () => console.log("can't click when paused")
       }
     >
       <planeBufferGeometry attach="geometry" args={[100, 100]} />
@@ -202,48 +216,61 @@ function Lasers() {
 
 // This component runs game logic on each frame draw to update game state.
 function GameTimer() {
+  const [score, setScore] = useRecoilState(scoreState);
   const [enemies, setEnemies] = useRecoilState(enemyPositionState);
   const [lasers, setLaserPositions] = useRecoilState(laserPositionState);
-  const [score, setScore] = useRecoilState(scoreState);
+  const [paused, setPause] = useRecoilState(pauseState);
+
+  useEffect(() => {
+    window.addEventListener('keydown', (e) => {
+      console.log(!paused);
+      if (e.keyCode === 32) setPause(!paused);
+    });
+  }, [paused]);
 
   useFrame(({ mouse }) => {
-    // Calculate hits and remove lasers and enemies, increase score.
+    if (paused === false) {
+      // Calculate hits and remove lasers and enemies, increase score.
+      const hitEnemies = enemies
+        ? enemies.map(
+            (enemy) =>
+              lasers.filter(
+                (laser) =>
+                  laser.z - enemy.z < 1 &&
+                  laser.x - enemy.x < 1 &&
+                  laser.y - enemy.y < 1
+              ).length > 0
+          )
+        : [];
 
-    const hitEnemies = enemies
-      ? enemies.map(
-          (enemy) =>
-            lasers.filter(
-              (laser) =>
-                laser.z - enemy.z < 1 &&
-                laser.x - enemy.x < 1 &&
-                laser.y - enemy.y < 1
-            ).length > 0
-        )
-      : [];
+      if (hitEnemies.includes(true) && enemies.length > 0) {
+        setScore(score + 1);
+        console.log('hit detected');
+      }
 
-    if (hitEnemies.includes(true) && enemies.length > 0) {
-      setScore(score + 1);
-      console.log('hit detected');
+      // Move all of the enemies. Remove enemies that have been destroyed, or passed the player.
+      setEnemies(
+        enemies
+          .map((enemy) => ({
+            x: enemy.x,
+            y: enemy.y,
+            z: enemy.z + ENEMY_SPEED,
+          }))
+          .filter((enemy, idx) => !hitEnemies[idx] && enemy.z < 0)
+      );
+      // Move the Lasers and remove lasers at end of range or that have hit the ground.
+      setLaserPositions(
+        lasers
+          .map((laser) => ({
+            id: laser.id,
+            x: laser.x + laser.velocity[0],
+            y: laser.y + laser.velocity[1],
+            z: laser.z - LASER_Z_VELOCITY,
+            velocity: laser.velocity,
+          }))
+          .filter((laser) => laser.z > -LASER_RANGE && laser.y > GROUND_HEIGHT)
+      );
     }
-
-    // Move all of the enemies. Remove enemies that have been destroyed, or passed the player.
-    setEnemies(
-      enemies
-        .map((enemy) => ({ x: enemy.x, y: enemy.y, z: enemy.z + ENEMY_SPEED }))
-        .filter((enemy, idx) => !hitEnemies[idx] && enemy.z < 0)
-    );
-    // Move the Lasers and remove lasers at end of range or that have hit the ground.
-    setLaserPositions(
-      lasers
-        .map((laser) => ({
-          id: laser.id,
-          x: laser.x + laser.velocity[0],
-          y: laser.y + laser.velocity[1],
-          z: laser.z - LASER_Z_VELOCITY,
-          velocity: laser.velocity,
-        }))
-        .filter((laser) => laser.z > -LASER_RANGE && laser.y > GROUND_HEIGHT)
-    );
   });
   return null;
 }
@@ -267,15 +294,6 @@ export default function App() {
           <GameTimer />
         </RecoilRoot>
       </Canvas>
-
-      <a
-        href="https://codeworkshop.dev/blog/2020-06-23-build-a-game-with-react-three-fiber-and-recoil/"
-        className="blog-link"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Blog Post
-      </a>
     </>
   );
 }
