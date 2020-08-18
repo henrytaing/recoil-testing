@@ -1,1 +1,12 @@
-{"version":3,"sources":["styles.css"],"names":[],"mappings":"AAAA,EACE,qBACF,CAEA,gBAGE,UAAW,CACX,WAAY,CACZ,QAAS,CACT,SACF,CAEA,WACE,iBAAkB,CAClB,QAAS,CACT,MAAO,CACP,YAAa,CACb,oBAAqB,CACrB,qDAA4D,CAC5D,aAAoB,CACpB,WACF,CAEA,iBACE,aACF","file":"main.d25aa9cd.chunk.css","sourcesContent":["* {\r\n  box-sizing: border-box;\r\n}\r\n\r\nhtml,\r\nbody,\r\n#root {\r\n  width: 100%;\r\n  height: 100%;\r\n  margin: 0;\r\n  padding: 0;\r\n}\r\n\r\n.blog-link {\r\n  position: absolute;\r\n  bottom: 0;\r\n  left: 0;\r\n  padding: 1rem;\r\n  text-decoration: none;\r\n  font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif;\r\n  color: palevioletred;\r\n  z-index: 999;\r\n}\r\n\r\n.blog-link:hover {\r\n  color: rgb(141, 56, 85);\r\n}\r\n"]}
+{
+  "version": 3,
+  "sources": [
+    "styles.css"
+  ],
+  "names": [],
+  "mappings": "AAAA,EACE,qBACF,CAEA,gBAGE,UAAW,CACX,WAAY,CACZ,QAAS,CACT,SACF,CAEA,WACE,iBAAkB,CAClB,QAAS,CACT,MAAO,CACP,YAAa,CACb,oBAAqB,CACrB,qDAA4D,CAC5D,aAAoB,CACpB,WACF,CAEA,iBACE,aACF",
+  "file": "main.d25aa9cd.chunk.css",
+  "sourcesContent": [
+    "* {\r\n  box-sizing: border-box;\r\n}\r\n\r\nhtml,\r\nbody,\r\n#root {\r\n  width: 100%;\r\n  height: 100%;\r\n  margin: 0;\r\n  padding: 0;\r\n}\r\n\r\n.blog-link {\r\n  position: absolute;\r\n  bottom: 0;\r\n  left: 0;\r\n  padding: 1rem;\r\n  text-decoration: none;\r\n  font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif;\r\n  color: palevioletred;\r\n  z-index: 999;\r\n}\r\n\r\n.blog-link:hover {\r\n  color: rgb(141, 56, 85);\r\n}\r\n"
+  ]
+}
