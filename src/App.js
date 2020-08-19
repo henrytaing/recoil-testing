@@ -185,7 +185,7 @@ function LaserController() {
                   ],
                 },
               ])
-          : () => console.log('Cannot shoot while paused')
+          : () => console.log("can't click when paused")
       }
     >
       <planeBufferGeometry attach="geometry" args={[100, 100]} />
